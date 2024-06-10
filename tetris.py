@@ -5,9 +5,9 @@ import random
 pygame.init()
 
 # Screen dimensions
-GRID_WIDTH = 10
-GRID_HEIGHT = 20
-BLOCK_SIZE = 30
+GRID_WIDTH = 15
+GRID_HEIGHT = 25
+BLOCK_SIZE = 25
 SCREEN_WIDTH = GRID_WIDTH * BLOCK_SIZE
 SCREEN_HEIGHT = GRID_HEIGHT * BLOCK_SIZE
 FPS = 60
@@ -16,14 +16,18 @@ FPS = 60
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 RED = (225, 0, 0)
+SHADOW_COLOR = (50, 50, 50)
+OUTLINE_COLOR = (0, 0, 0)
+BUTTON_COLOR = (255, 50, 50)
+BUTTON_HOVER_COLOR = (200, 0, 0)
+CYAN = (0, 225, 225)
+BLUE = (0, 0, 225)
+ORANGE = (225, 165, 0)
+YELLOW = (225, 225, 0)
+GREEN = (0, 225, 0)
+PURPLE = (128, 0, 128)
 COLORS = [
-    (0, 225, 225), # Cyan
-    (0, 0, 225),   # Blue
-    (225, 165, 0), # Orange
-    (225, 225, 0), # Yellow
-    (0, 225, 0),   # Green
-    (128, 0, 128), # Purple
-    RED            # Red
+    CYAN, BLUE, ORANGE, YELLOW, GREEN, PURPLE, RED
 ]
 
 # Tetromino shapes
@@ -46,6 +50,7 @@ clock = pygame.time.Clock()
 
 # Initialize font
 font = pygame.font.Font(None, 36)
+large_font = pygame.font.Font(None, 72)  # Larger font for the Game Over text
 
 # Initialize variables
 grid = [[0 for x in range(GRID_WIDTH)] for y in range(GRID_HEIGHT)]
@@ -110,29 +115,53 @@ def draw_grid():
             if grid[i][j] != 0:
                 pygame.draw.rect(screen, COLORS[grid[i][j] - 1], (j * BLOCK_SIZE, i * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE))
 
-def draw_text(text, x, y):
-    img = font.render(text, True, WHITE)
+def draw_text(text, x, y, font, color):
+    img = font.render(text, True, color)
     screen.blit(img, (x, y))
 
 def draw_button(text, x, y, width, height):
-    pygame.draw.rect(screen, RED, (x, y, width, height))
-    draw_text(text, x + 10, y + 10)
+    mouse_pos = pygame.mouse.get_pos()
+    if x <= mouse_pos[0] <= x + width and y <= mouse_pos[1] <= y + height:
+        pygame.draw.rect(screen, BUTTON_HOVER_COLOR, (x, y, width, height), border_radius=8)
+    else:
+        pygame.draw.rect(screen, BUTTON_COLOR, (x, y, width, height), border_radius=8)
+    draw_text(text, x + (width - font.size(text)[0]) // 2, y + (height - font.size(text)[1]) // 2, font, WHITE)
 
 def draw():
     screen.fill(BLACK)
     draw_grid()
     draw_tetromino(tetromino, tetromino_x * BLOCK_SIZE, tetromino_y * BLOCK_SIZE, tetromino_index)
-    draw_text("Score: " + str(score), SCREEN_WIDTH + 10, 10)
-    draw_text("Next:", SCREEN_WIDTH + 10, 50)
+    draw_text("Score: " + str(score), SCREEN_WIDTH + 10, 10, font, WHITE)
+    draw_text("Next:", SCREEN_WIDTH + 10, 50, font, WHITE)
     draw_tetromino(next_tetromino, SCREEN_WIDTH + 10, 80, next_tetromino_index)
-    draw_text("Hold:", SCREEN_WIDTH + 10, 200)
+    draw_text("Hold:", SCREEN_WIDTH + 10, 200, font, WHITE)
     if held_tetromino is not None:
         draw_tetromino(held_tetromino, SCREEN_WIDTH + 10, 230, held_tetromino_index)
     if game_over:
-        draw_text("Game Over", SCREEN_WIDTH // 2 - 50, SCREEN_HEIGHT // 2 - 50)
-        draw_text("Score: " + str(score), SCREEN_WIDTH // 2 - 50, SCREEN_HEIGHT // 2 - 20)
+        draw_text_with_shadow_and_outline("Game Over", SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 100)
+        draw_text("Score: " + str(score), SCREEN_WIDTH // 2 - 50, SCREEN_HEIGHT // 2 - 20, font, WHITE)
         draw_button("Retry", SCREEN_WIDTH // 2 - 50, SCREEN_HEIGHT // 2 + 20, 100, 50)
     pygame.display.flip()
+
+def draw_text_with_shadow_and_outline(text, x, y):
+    shadow_offset = 5
+    outline_thickness = 2
+    img = large_font.render(text, True, RED)
+    text_width = img.get_width()
+    text_height = img.get_height()
+
+    x -= text_width // 2  # Adjust x to center the text
+
+    # Draw shadow
+    draw_text(text, x + shadow_offset, y + shadow_offset, large_font, SHADOW_COLOR)
+
+    # Draw outline
+    for dx in [-outline_thickness, outline_thickness]:
+        for dy in [-outline_thickness, outline_thickness]:
+            draw_text(text, x + dx, y + dy, large_font, OUTLINE_COLOR)
+
+    # Draw main text
+    draw_text(text, x, y, large_font, RED)
 
 def reset():
     global grid, tetromino, next_tetromino, tetromino_index, next_tetromino_index, held_tetromino, held_tetromino_index, can_hold, score, game_over
